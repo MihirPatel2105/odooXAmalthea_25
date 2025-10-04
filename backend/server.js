@@ -59,25 +59,16 @@ const authLimiter = rateLimit({
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
-// CORS configuration
+// CORS configuration (development: allow all origins)
 app.use(cors({
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      process.env.FRONTEND_URL,
-      'http://localhost:3000',
-      'http://localhost:3001'
-    ];
-    
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Handle preflight requests for all routes
+app.options('*', cors());
 
 // Body parser middleware
 app.use(express.json({ 

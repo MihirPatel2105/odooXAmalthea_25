@@ -216,7 +216,7 @@ expenseSchema.virtual('totalAmount').get(function() {
 // Virtual for current approver
 expenseSchema.virtual('currentApprover').get(function() {
   if (this.status !== 'pending') return null;
-  
+  if (!Array.isArray(this.approvalFlow)) return null;
   const pendingApproval = this.approvalFlow.find(approval => 
     approval.status === 'pending'
   );

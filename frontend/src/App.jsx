@@ -1,3 +1,4 @@
+import UserCreate from './pages/admin/UserCreate';
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
@@ -27,6 +28,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import Users from './pages/admin/Users';
 import Settings from './pages/admin/Settings';
 import AdminReports from './pages/admin/AdminReports';
+import UserEdit from './pages/admin/UserEdit';
 
 // Profile Pages
 import Profile from './pages/profile/Profile';
@@ -66,6 +68,8 @@ function App() {
                   {/* Admin Routes */}
                   <Route path="admin" element={<AdminDashboard />} />
                   <Route path="admin/users" element={<Users />} />
+                  <Route path="admin/users/create" element={<UserCreate />} />
+                  <Route path="admin/users/:userId/edit" element={<UserEdit />} />
                   <Route path="admin/settings" element={<Settings />} />
                   <Route path="admin/reports" element={<AdminReports />} />
                 </Route>

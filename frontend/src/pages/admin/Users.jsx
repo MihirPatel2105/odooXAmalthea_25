@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useApi } from '../../hooks/useApi';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import UserCard from '../../components/admin/UserCard';
@@ -12,7 +13,7 @@ const Users = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const response = await get('/admin/users');
+  const response = await get('/users');
         setUsers(response.data.users);
       } catch (error) {
         console.error('Failed to fetch users:', error);
@@ -34,7 +35,12 @@ const Users = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+        <Link to="/admin/users/create" className="btn btn-primary">
+          Add User
+        </Link>
+      </div>
       {users.length === 0 ? (
         <div className="card text-center py-12">
           <h3 className="text-lg font-semibold text-gray-900">No users found</h3>
