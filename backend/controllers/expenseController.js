@@ -4,7 +4,7 @@ const Company = require('../models/Company');
 const ApprovalRule = require('../models/ApprovalRule');
 const { convertCurrency } = require('../utils/currencyService');
 const { sendEmail } = require('../utils/emailService');
-const { processReceiptOCR } = require('../utils/suryaOcrService');
+const { processReceiptOCR } = require('../utils/tesseractOcrService');
 const mongoose = require('mongoose');
 
 // Submit new expense

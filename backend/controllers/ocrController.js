@@ -1,4 +1,4 @@
-const { processReceiptOCR, validateOCRData, getOCRQueueStatus, testSuryaInstallation } = require('../utils/suryaOcrService');
+const { processReceiptOCR, validateOCRData, getOCRQueueStatus, testTesseractInstallation } = require('../utils/tesseractOcrService');
 const path = require('path');
 const fs = require('fs');
 
@@ -19,29 +19,90 @@ exports.processReceipt = async (req, res) => {
 
     console.log(`Processing receipt: ${imagePath}`);
 
-    const ocrResult = await processReceiptOCR(imagePath, options);
+    try {
+      const ocrResult = await processReceiptOCR(imagePath, options);
 
-    if (!ocrResult.success) {
-      return res.status(500).json({
-        success: false,
-        message: 'OCR processing failed',
-        error: ocrResult.error
+      if (!ocrResult.success) {
+        // If OCR fails, provide mock data as fallback
+        console.warn('OCR processing failed, providing mock data:', ocrResult.error);
+        
+        const mockData = {
+          amount: '0.00',
+          date: new Date().toISOString().split('T')[0],
+          vendor: 'Unknown Vendor',
+          category: 'general',
+          confidence: 0,
+          note: 'OCR processing failed - please fill manually'
+        };
+
+        return res.json({
+          success: true,
+          message: 'Receipt uploaded successfully (OCR unavailable)',
+          data: {
+            extractedData: mockData,
+            file: {
+              filename: req.file.filename,
+              originalName: req.file.originalname,
+              size: req.file.size,
+              mimeType: req.file.mimetype
+            }
+          }
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Receipt processed successfully',
+        data: {
+          extractedData: {
+            amount: ocrResult.data.extractedAmount || '0.00',
+            date: ocrResult.data.extractedDate ? 
+              (ocrResult.data.extractedDate instanceof Date ? 
+                ocrResult.data.extractedDate.toISOString().split('T')[0] : 
+                ocrResult.data.extractedDate) : 
+              new Date().toISOString().split('T')[0],
+            vendor: ocrResult.data.merchantName || 'Unknown Vendor',
+            category: ocrResult.data.suggestedCategory || 'general',
+            confidence: ocrResult.data.confidence || 0,
+            items: ocrResult.data.items || [],
+            note: ocrResult.data.note || ''
+          },
+          file: {
+            filename: req.file.filename,
+            originalName: req.file.originalname,
+            size: req.file.size,
+            mimeType: req.file.mimetype
+          }
+        }
+      });
+
+    } catch (ocrError) {
+      // If OCR throws an error, provide mock data as fallback
+      console.warn('OCR processing threw error, providing mock data:', ocrError.message);
+      
+      const mockData = {
+        amount: '0.00',
+        date: new Date().toISOString().split('T')[0],
+        vendor: 'Unknown Vendor',
+        category: 'general',
+        confidence: 0,
+        note: 'OCR processing failed - please fill manually'
+      };
+
+      return res.json({
+        success: true,
+        message: 'Receipt uploaded successfully (OCR unavailable)',
+        data: {
+          extractedData: mockData,
+          file: {
+            filename: req.file.filename,
+            originalName: req.file.originalname,
+            size: req.file.size,
+            mimeType: req.file.mimetype
+          }
+        }
       });
     }
-
-    res.json({
-      success: true,
-      message: 'Receipt processed successfully',
-      data: {
-        ocrData: ocrResult.data,
-        file: {
-          filename: req.file.filename,
-          originalName: req.file.originalname,
-          size: req.file.size,
-          mimeType: req.file.mimetype
-        }
-      }
-    });
 
   } catch (error) {
     console.error('Receipt processing error:', error);
@@ -101,25 +162,16 @@ exports.getQueueStatus = async (req, res) => {
   }
 };
 
-// Test Surya OCR installation
+// Test Tesseract OCR installation
 exports.testInstallation = async (req, res) => {
   try {
-    const testResult = await testSuryaInstallation();
+    const result = await testTesseractInstallation();
     
-    if (testResult.success) {
-      res.json({
-        success: true,
-        message: 'Surya OCR is properly installed and configured',
-        data: testResult
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Surya OCR installation test failed',
-        error: testResult.error,
-        suggestion: testResult.suggestion
-      });
-    }
+    res.json({
+      success: result.success,
+      message: result.success ? result.message : result.error,
+      suggestion: result.suggestion || null
+    });
 
   } catch (error) {
     res.status(500).json({

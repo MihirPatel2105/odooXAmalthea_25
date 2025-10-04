@@ -1,7 +1,7 @@
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
-const suryaConfig = require('../config/surya');
+const tesseractConfig = require('../config/tesseract');
 
 // OCR processing queue to limit concurrent operations
 class OCRQueue {
@@ -38,14 +38,13 @@ class OCRQueue {
   }
 }
 
-const ocrQueue = new OCRQueue(suryaConfig.maxConcurrent);
+const ocrQueue = new OCRQueue(tesseractConfig.maxConcurrent);
 
-// Process receipt using Surya OCR
-const processSuryaOCR = async (imagePath, options = {}) => {
+// Process receipt using Tesseract OCR
+const processTesseractOCR = async (imagePath, options = {}) => {
   return new Promise((resolve, reject) => {
     const {
-      languages = suryaConfig.settings.languages,
-      modelPath = suryaConfig.modelPath,
+      languages = tesseractConfig.settings.languages,
       parseOnly = false
     } = options;
 
@@ -54,24 +53,20 @@ const processSuryaOCR = async (imagePath, options = {}) => {
     }
 
     const args = [
-      suryaConfig.scriptPath,
+      tesseractConfig.scriptPath,
       imagePath,
       '--languages', ...languages
     ];
-
-    if (modelPath) {
-      args.push('--model-path', modelPath);
-    }
 
     if (parseOnly) {
       args.push('--parse-only');
     }
 
-    console.log(`Executing Surya OCR: ${suryaConfig.pythonPath} ${args.join(' ')}`);
+    console.log(`Executing Tesseract OCR: ${tesseractConfig.pythonPath} ${args.join(' ')}`);
 
-    const pythonProcess = spawn(suryaConfig.pythonPath, args, {
+    const pythonProcess = spawn(tesseractConfig.pythonPath, args, {
       stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: suryaConfig.timeout
+      timeout: tesseractConfig.timeout
     });
 
     let stdout = '';
@@ -94,21 +89,21 @@ const processSuryaOCR = async (imagePath, options = {}) => {
           reject(new Error(`Failed to parse OCR result: ${parseError.message}\nOutput: ${stdout}`));
         }
       } else {
-        reject(new Error(`Surya OCR process failed with code ${code}\nError: ${stderr}\nOutput: ${stdout}`));
+        reject(new Error(`Tesseract OCR process failed with code ${code}\nError: ${stderr}\nOutput: ${stdout}`));
       }
     });
 
     pythonProcess.on('error', (error) => {
       if (error.code === 'ENOENT') {
-        reject(new Error(`Python executable not found: ${suryaConfig.pythonPath}. Please ensure Python is installed and accessible.`));
+        reject(new Error(`Python executable not found: ${tesseractConfig.pythonPath}. Please ensure Python is installed and accessible.`));
       } else {
-        reject(new Error(`Failed to start Surya OCR process: ${error.message}`));
+        reject(new Error(`Failed to start Tesseract OCR process: ${error.message}`));
       }
     });
 
     pythonProcess.on('timeout', () => {
       pythonProcess.kill('SIGKILL');
-      reject(new Error(`Surya OCR process timed out after ${suryaConfig.timeout}ms`));
+      reject(new Error(`Tesseract OCR process timed out after ${tesseractConfig.timeout}ms`));
     });
   });
 };
@@ -119,7 +114,7 @@ exports.processReceiptOCR = async (imagePath, options = {}) => {
     console.log(`Processing receipt OCR for: ${imagePath}`);
 
     const result = await ocrQueue.add(async () => {
-      return await processSuryaOCR(imagePath, options);
+      return await processTesseractOCR(imagePath, options);
     });
 
     if (!result.success) {
@@ -161,9 +156,32 @@ exports.processReceiptOCR = async (imagePath, options = {}) => {
 
   } catch (error) {
     console.error('OCR processing error:', error);
+    
+    // Provide more specific error handling for common issues
+    if (error.message.includes('Python executable not found')) {
+      return {
+        success: false,
+        error: 'Python not configured correctly. OCR functionality is currently unavailable.'
+      };
+    }
+    
+    if (error.message.includes('Tesseract OCR process failed')) {
+      return {
+        success: false,
+        error: 'OCR service is currently unavailable. Please install required dependencies.'
+      };
+    }
+    
+    if (error.message.includes('Image file not found')) {
+      return {
+        success: false,
+        error: 'Uploaded file could not be processed. Please try again.'
+      };
+    }
+
     return {
       success: false,
-      error: error.message
+      error: `OCR processing failed: ${error.message}`
     };
   }
 };
@@ -257,11 +275,11 @@ exports.getOCRQueueStatus = () => {
   };
 };
 
-// Test Surya OCR installation
-exports.testSuryaInstallation = async () => {
+// Test Tesseract OCR installation
+exports.testTesseractInstallation = async () => {
   try {
     const testResult = await new Promise((resolve, reject) => {
-      const pythonProcess = spawn(suryaConfig.pythonPath, ['-c', 'import surya; print("Surya OCR is available")'], {
+      const pythonProcess = spawn(tesseractConfig.pythonPath, ['-c', 'import pytesseract; print("Tesseract OCR is available")'], {
         stdio: ['pipe', 'pipe', 'pipe'],
         timeout: 10000
       });
@@ -296,7 +314,7 @@ exports.testSuryaInstallation = async () => {
     return {
       success: false,
       error: error.message,
-      suggestion: 'Run: cd python && python setup.py to install Surya OCR dependencies'
+      suggestion: 'Run: cd python && python setup.py to install Tesseract OCR dependencies'
     };
   }
 };

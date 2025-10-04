@@ -1,19 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { EyeIcon, EyeSlashIcon, CreditCardIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, CreditCardIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const countries = [
-  'United States', 'Canada', 'United Kingdom', 'Germany', 'France', 
-  'Australia', 'Japan', 'India', 'Brazil', 'Mexico'
+  { name: 'United States', currency: 'USD', code: 'US' },
+  { name: 'Canada', currency: 'CAD', code: 'CA' },
+  { name: 'United Kingdom', currency: 'GBP', code: 'GB' },
+  { name: 'Germany', currency: 'EUR', code: 'DE' },
+  { name: 'India', currency: 'INR', code: 'IN' },
+  { name: 'Australia', currency: 'AUD', code: 'AU' },
+  { name: 'Japan', currency: 'JPY', code: 'JP' }
 ];
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState(null);
   const { register: registerUser, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -21,10 +27,12 @@ const Register = () => {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting }
   } = useForm();
 
   const password = watch('password');
+  const watchedCountry = watch('country');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -32,8 +40,28 @@ const Register = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  useEffect(() => {
+    if (watchedCountry) {
+      const country = countries.find(c => c.name === watchedCountry);
+      if (country) {
+        setSelectedCountry(country);
+        setValue('currency', country.currency);
+      }
+    }
+  }, [watchedCountry, setValue]);
+
   const onSubmit = async (data) => {
-    const result = await registerUser(data);
+    const formData = {
+      ...data,
+      role: 'admin', // First user becomes admin
+      companyData: {
+        name: data.companyName,
+        country: data.country,
+        currency: data.currency
+      }
+    };
+    
+    const result = await registerUser(formData);
     if (result.success) {
       navigate('/dashboard', { replace: true });
     }
@@ -49,7 +77,7 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+      <div className="max-w-2xl w-full space-y-8">
         <div>
           <div className="flex justify-center">
             <CreditCardIcon className="h-12 w-12 text-primary-600" />
@@ -58,176 +86,180 @@ const Register = () => {
             Create your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
-            <Link
-              to="/login"
-              className="font-medium text-primary-600 hover:text-primary-500"
-            >
-              sign in to your existing account
-            </Link>
+            Set up your company's expense management system
           </p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="First Name"
-                type="text"
-                autoComplete="given-name"
-                required
-                {...register('firstName', {
-                  required: 'First name is required',
-                  minLength: {
-                    value: 2,
-                    message: 'First name must be at least 2 characters'
-                  }
-                })}
-                error={errors.firstName?.message}
-              />
-
-              <Input
-                label="Last Name"
-                type="text"
-                autoComplete="family-name"
-                required
-                {...register('lastName', {
-                  required: 'Last name is required',
-                  minLength: {
-                    value: 2,
-                    message: 'Last name must be at least 2 characters'
-                  }
-                })}
-                error={errors.lastName?.message}
-              />
-            </div>
-
-            <Input
-              label="Email address"
-              type="email"
-              autoComplete="email"
-              required
-              {...register('email', {
-                required: 'Email is required',
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: 'Invalid email address'
-                }
-              })}
-              error={errors.email?.message}
-            />
-
-            <Input
-              label="Company Name"
-              type="text"
-              autoComplete="organization"
-              required
-              {...register('companyName', {
-                required: 'Company name is required',
-                minLength: {
-                  value: 2,
-                  message: 'Company name must be at least 2 characters'
-                }
-              })}
-              error={errors.companyName?.message}
-            />
-
+          <div className="bg-white shadow-lg rounded-lg p-8 space-y-6">
+            {/* Personal Information */}
             <div>
-              <label className="label">Country</label>
-              <select
-                className="input"
-                {...register('country', {
-                  required: 'Country is required'
-                })}
-              >
-                <option value="">Select a country</option>
-                {countries.map((country) => (
-                  <option key={country} value={country}>
-                    {country}
-                  </option>
-                ))}
-              </select>
-              {errors.country && (
-                <p className="mt-1 text-sm text-danger-600">{errors.country.message}</p>
-              )}
+              <div className="flex items-center mb-4">
+                <CreditCardIcon className="h-6 w-6 text-primary-600 mr-2" />
+                <h3 className="text-lg font-medium text-gray-900">Personal Information</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <Input
+                  label="First Name"
+                  {...register('firstName', { 
+                    required: 'First name is required',
+                    minLength: { value: 2, message: 'First name must be at least 2 characters' }
+                  })}
+                  error={errors.firstName}
+                  placeholder="Enter your first name"
+                />
+                <Input
+                  label="Last Name"
+                  {...register('lastName', { 
+                    required: 'Last name is required',
+                    minLength: { value: 2, message: 'Last name must be at least 2 characters' }
+                  })}
+                  error={errors.lastName}
+                  placeholder="Enter your last name"
+                />
+              </div>
+
+              <div className="mt-4">
+                <Input
+                  label="Email Address"
+                  type="email"
+                  {...register('email', {
+                    required: 'Email is required',
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: 'Invalid email address'
+                    }
+                  })}
+                  error={errors.email}
+                  placeholder="Enter your work email"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 mt-4">
+                <div className="relative">
+                  <Input
+                    label="Password"
+                    type={showPassword ? 'text' : 'password'}
+                    {...register('password', {
+                      required: 'Password is required',
+                      minLength: { value: 8, message: 'Password must be at least 8 characters' }
+                    })}
+                    error={errors.password}
+                    placeholder="Create a strong password"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 top-6 pr-3 flex items-center"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeSlashIcon className="h-5 w-5 text-gray-400" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+
+                <Input
+                  label="Confirm Password"
+                  type={showPassword ? 'text' : 'password'}
+                  {...register('confirmPassword', {
+                    required: 'Please confirm your password',
+                    validate: value => value === password || 'Passwords do not match'
+                  })}
+                  error={errors.confirmPassword}
+                  placeholder="Confirm your password"
+                />
+              </div>
             </div>
 
-            <Input
-              label="Password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              required
-              rightIcon={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? (
-                    <EyeSlashIcon className="h-5 w-5" />
-                  ) : (
-                    <EyeIcon className="h-5 w-5" />
+            {/* Company Information */}
+            <div className="border-t pt-6">
+              <div className="flex items-center mb-4">
+                <BuildingOfficeIcon className="h-6 w-6 text-primary-600 mr-2" />
+                <h3 className="text-lg font-medium text-gray-900">Company Information</h3>
+              </div>
+
+              <div className="mb-4">
+                <Input
+                  label="Company Name"
+                  {...register('companyName', { 
+                    required: 'Company name is required',
+                    minLength: { value: 2, message: 'Company name must be at least 2 characters' }
+                  })}
+                  error={errors.companyName}
+                  placeholder="Enter your company name"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Country
+                  </label>
+                  <select
+                    {...register('country', { required: 'Country is required' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    <option value="">Select country</option>
+                    {countries.map((country) => (
+                      <option key={country.code} value={country.name}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.country && (
+                    <p className="mt-1 text-sm text-red-600">{errors.country.message}</p>
                   )}
-                </button>
-              }
-              {...register('password', {
-                required: 'Password is required',
-                minLength: {
-                  value: 6,
-                  message: 'Password must be at least 6 characters'
-                },
-                pattern: {
-                  value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                  message: 'Password must contain at least one lowercase letter, one uppercase letter, and one number'
-                }
-              })}
-              error={errors.password?.message}
-            />
+                </div>
 
-            <Input
-              label="Confirm Password"
-              type="password"
-              autoComplete="new-password"
-              required
-              {...register('confirmPassword', {
-                required: 'Please confirm your password',
-                validate: value => value === password || 'Passwords do not match'
-              })}
-              error={errors.confirmPassword?.message}
-            />
+                <Input
+                  label="Base Currency"
+                  {...register('currency')}
+                  value={selectedCountry?.currency || ''}
+                  readOnly
+                  placeholder="Auto-selected"
+                  className="bg-gray-50"
+                />
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mt-6">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <CreditCardIcon className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-blue-800">
+                      You're setting up as an Admin
+                    </h3>
+                    <div className="mt-2 text-sm text-blue-700">
+                      <p>As the first user, you'll have admin privileges to manage your company's expense system.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-6">
+              <Button
+                type="submit"
+                isLoading={isSubmitting}
+                className="w-full"
+              >
+                Create Account & Company
+              </Button>
+            </div>
           </div>
 
-          <div className="flex items-center">
-            <input
-              id="agree-terms"
-              name="agree-terms"
-              type="checkbox"
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-              {...register('agreeTerms', {
-                required: 'You must agree to the terms and conditions'
-              })}
-            />
-            <label htmlFor="agree-terms" className="ml-2 block text-sm text-gray-900">
-              I agree to the{' '}
-              <a href="#" className="text-primary-600 hover:text-primary-500">
-                Terms and Conditions
-              </a>
-            </label>
+          <div className="text-center">
+            <Link
+              to="/login"
+              className="font-medium text-primary-600 hover:text-primary-500"
+            >
+              Already have an account? Sign in
+            </Link>
           </div>
-          {errors.agreeTerms && (
-            <p className="text-sm text-danger-600">{errors.agreeTerms.message}</p>
-          )}
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            className="w-full"
-            loading={isSubmitting}
-            disabled={isSubmitting}
-          >
-            Create Account
-          </Button>
         </form>
       </div>
     </div>
