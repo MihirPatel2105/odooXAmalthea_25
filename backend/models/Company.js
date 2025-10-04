@@ -26,8 +26,8 @@ const companySchema = new mongoose.Schema({
   },
   adminId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: 'User'
+    // Remove required: true - we'll set this after user creation
   },
   settings: {
     maxExpenseAmount: {
