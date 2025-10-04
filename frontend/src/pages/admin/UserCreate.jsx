@@ -25,14 +25,14 @@ const UserCreate = () => {
     // Fetch managers/admins for dropdown
     const fetchManagers = async () => {
       try {
-        const { data } = await post('/users', { role: 'manager' }); // This should be a GET, not POST
-        setManagers(data.users.filter(u => ['manager', 'admin'].includes(u.role)));
+        const response = await get('/users?role=manager');
+        setManagers(response.data.users.filter(u => ['manager', 'admin'].includes(u.role)));
       } catch (err) {
         setManagers([]);
       }
     };
     fetchManagers();
-  }, [post]);
+  }, [get]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

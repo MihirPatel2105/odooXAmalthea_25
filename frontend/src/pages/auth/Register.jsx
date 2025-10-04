@@ -244,12 +244,11 @@ const Register = () => {
             <div className="pt-6">
               <Button
                 type="submit"
-                isLoading={isSubmitting}
+                loading={isSubmitting}
                 className="w-full"
               >
                 Create Account & Company
               </Button>
-            </div>
           </div>
 
           <div className="text-center">
@@ -260,6 +259,7 @@ const Register = () => {
               Already have an account? Sign in
             </Link>
           </div>
+                </div>
         </form>
       </div>
     </div>

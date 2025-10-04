@@ -20,6 +20,17 @@ connectDB();
 
 const app = express();
 
+// CORS configuration (development: allow all origins)
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Handle preflight requests for all routes
+app.options('*', cors());
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
@@ -58,17 +69,6 @@ const authLimiter = rateLimit({
 
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
-
-// CORS configuration (development: allow all origins)
-app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-// Handle preflight requests for all routes
-app.options('*', cors());
 
 // Body parser middleware
 app.use(express.json({ 

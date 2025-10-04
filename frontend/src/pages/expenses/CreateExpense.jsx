@@ -48,6 +48,7 @@ const CreateExpense = () => {
   const [files, setFiles] = useState([]);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrData, setOcrData] = useState(null);
+  const [backendErrors, setBackendErrors] = useState([]);
   
   const {
     register,
@@ -190,16 +191,17 @@ const CreateExpense = () => {
 
   const onSubmit = async (data) => {
     setLoading(true);
+    setBackendErrors([]);
     try {
       const formData = new FormData();
       
       // Add expense data
-      formData.append('amount', data.amount);
-      formData.append('currency', data.currency);
-      formData.append('category', data.category);
-      formData.append('description', data.description);
-      formData.append('date', data.date);
-      formData.append('vendor', data.vendor || '');
+  formData.append('amount[value]', data.amount);
+  formData.append('amount[currency]', data.currency);
+  formData.append('category', data.category);
+  formData.append('description', data.description);
+  formData.append('expenseDate', data.date);
+  formData.append('merchantName', data.vendor || '');
 
       // Add receipt files
       files.forEach((fileObj, index) => {
@@ -216,7 +218,10 @@ const CreateExpense = () => {
       navigate('/expenses');
     } catch (error) {
       console.error('Failed to create expense:', error);
-      toast.error('Failed to submit expense. Please try again.');
+      if (error.response && error.response.data && error.response.data.errors) {
+        setBackendErrors(error.response.data.errors);
+      }
+      toast.error('Failed to submit expense. Please check the form and try again.');
     } finally {
       setLoading(false);
     }
@@ -232,6 +237,16 @@ const CreateExpense = () => {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        {backendErrors.length > 0 && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <ul className="list-disc pl-5">
+              {backendErrors.map((err, idx) => (
+                <li key={idx}>{err.msg}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Receipt Upload Section */}
         <div className="bg-white shadow-lg rounded-lg p-6">
           <div className="flex items-center mb-4">
