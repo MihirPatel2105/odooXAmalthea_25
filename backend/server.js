@@ -20,7 +20,7 @@ connectDB();
 
 const app = express();
 
-// CORS configuration (development: allow all origins)
+// CORS configuration (development: allow localhost:3000)
 app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true,
@@ -29,7 +29,12 @@ app.use(cors({
 }));
 
 // Handle preflight requests for all routes
-app.options('*', cors());
+app.options('*', cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Security middleware
 app.use(helmet({

@@ -6,6 +6,15 @@ import { formatCurrency, formatDate } from '../../utils/formatters';
 import Button from '../../components/common/Button';
 
 const ExpenseDetail = () => {
+// Helper for status badge CSS class
+function getStatusBadge(status) {
+  switch (status) {
+    case 'approved': return 'badge-success';
+    case 'pending': return 'badge-warning';
+    case 'rejected': return 'badge-danger';
+    default: return 'badge-secondary';
+  }
+}
   const { id } = useParams();
   const { get } = useApi();
   const [expense, setExpense] = useState(null);
@@ -58,7 +67,31 @@ const ExpenseDetail = () => {
 
         <div className="card">
           <h2 className="text-lg font-semibold">Amount</h2>
-          <p className="text-gray-900">{formatCurrency(expense.amount.converted.value || expense.amount.original.value)}</p>
+          <p className="text-gray-900">{
+            (() => {
+              const amt = expense.amount;
+              if (typeof amt === 'number' || typeof amt === 'string') {
+                return formatCurrency(Number(amt) || 0);
+              }
+              if (amt?.converted?.value !== undefined) {
+                return formatCurrency(amt.converted.value);
+              }
+              if (amt?.original?.value !== undefined) {
+                return formatCurrency(amt.original.value);
+              }
+              if (amt?.original && typeof amt.original === 'number') {
+                return formatCurrency(amt.original);
+              }
+              // If amt is an object with only {original}, try to extract a primitive
+              if (amt && typeof amt === 'object' && 'original' in amt) {
+                const val = amt.original;
+                if (typeof val === 'number' || typeof val === 'string') {
+                  return formatCurrency(Number(val) || 0);
+                }
+              }
+              return 'N/A';
+            })()
+          }</p>
         </div>
 
         <div className="card">
